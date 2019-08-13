@@ -36,7 +36,7 @@ class Layer
         {
             s += this.shapes[i].toDxfString();
         } 
-        
+      
         
         return s;
     }

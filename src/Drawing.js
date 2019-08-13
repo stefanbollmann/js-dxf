@@ -7,6 +7,8 @@ const Text = require('./Text');
 const Polyline = require('./Polyline');
 const Face = require('./Face');
 const Point = require('./Point');
+const Block = require('./Block');
+const Insert = require('./Insert');
 
 class Drawing
 {
@@ -14,7 +16,10 @@ class Drawing
     {
         this.layers = {};
         this.activeLayer = null;
+        this.activeBlock = null;
         this.lineTypes = {};
+        this.blocks = {};
+
 
         for (let i = 0; i < Drawing.LINE_TYPES.length; ++i)
         {
@@ -50,10 +55,27 @@ class Drawing
         this.layers[name] = new Layer(name, colorNumber, lineTypeName);
         return this;
     }
-    
+
     setActiveLayer(name)
     {
         this.activeLayer = this.layers[name];
+        return this;
+    }
+
+    addBlock(name, layer, x, y, z){
+        this.blocks[name] = new Block(name, layer, x, y, z);
+        return this;
+    }
+
+    setActiveBlock(name)
+    {
+        this.activeBlock = this.blocks[name];
+        return this;
+    }
+
+    insertBlock(x, y, z, layer, block)
+    {
+        this.activeLayer.addShape(new Insert(x, y, z, layer, block));
         return this;
     }
 
@@ -63,9 +85,21 @@ class Drawing
         return this;
     }
 
+    drawLineToBlock(x1, y1, x2, y2)
+    {
+        this.activeBlock.addShape(new Line(x1, y1, x2, y2));
+        return this;
+    }
+
     drawPoint(x, y)
     {
         this.activeLayer.addShape(new Point(x, y));
+        return this;
+    }
+
+    drawPointToBlock(x, y)
+    {
+        this.activeBlock.addShape(new Point(x, y));
         return this;
     }
     
@@ -75,6 +109,15 @@ class Drawing
         this.activeLayer.addShape(new Line(x1, y2, x2, y2));
         this.activeLayer.addShape(new Line(x1, y1, x1, y2));
         this.activeLayer.addShape(new Line(x2, y1, x2, y2));
+        return this;
+    }
+
+    drawRectToBlock(x1, y1, x2, y2)
+    {
+        this.activeBlock.addShape(new Line(x1, y1, x2, y1));
+        this.activeBlock.addShape(new Line(x1, y2, x2, y2));
+        this.activeBlock.addShape(new Line(x1, y1, x1, y2));
+        this.activeBlock.addShape(new Line(x2, y1, x2, y2));
         return this;
     }
 
@@ -91,6 +134,12 @@ class Drawing
         return this;
     }
 
+    drawArcToBlock(x1, y1, r, startAngle, endAngle)
+    {
+        this.activeBlock.addShape(new Arc(x1, y1, r, startAngle, endAngle));
+        return this;
+    }
+
     /**
      * @param {number} x1 - Center x
      * @param {number} y1 - Center y
@@ -101,6 +150,13 @@ class Drawing
         this.activeLayer.addShape(new Circle(x1, y1, r));
         return this;
     }
+
+    drawCircleToBlock(x1, y1, r)
+    {
+        this.activeBlock.addShape(new Circle(x1, y1, r));
+        return this;
+    }
+
 
     /**
      * @param {number} x1 - x
@@ -115,12 +171,25 @@ class Drawing
         return this;
     }
 
+    drawTextToBlock(x1, y1, height, rotation, value)
+    {
+        this.activeBlock.addShape(new Text(x1, y1, height, rotation, value));
+        return this;
+    }
+
+
     /**
      * @param {array} points - Array of points like [ [x1, y1], [x2, y2]... ] 
      */
     drawPolyline(points)
     {
         this.activeLayer.addShape(new Polyline(points));
+        return this;
+    }
+
+    drawPolylineToBlock(points)
+    {
+        this.activeBlock.addShape(new Polyline(points));
         return this;
     }
 
@@ -143,6 +212,15 @@ class Drawing
         this.activeLayer.addShape(new Face(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4));
         return this;
     }
+
+    drawFaceToBlock(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4)
+    {
+        this.activeBlock.addShape(new Face(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4));
+        return this;
+    }
+
+
+
 
     _getDxfLtypeTable()
     {
@@ -202,6 +280,38 @@ class Drawing
         }
 
         s += '0\nENDSEC\n';
+
+        //Blocks section
+        s += '0\nSECTION\n';
+        s += '2\nBLOCKS\n';
+
+        for (let blockName in this.blocks)
+        {
+            let block = this.blocks[blockName];
+            s += '0\nBLOCK\n';
+            s += `8\n${block.layer}\n`;
+            s += `2\n${block.name}\n`;
+            s += `70\n0\n`;
+
+            s += `10\n${block.x}\n`;
+            s += `20\n${block.y}\n`;
+            s += `30\n${block.z}\n`;
+
+            s += `3\n${block.name}\n`;
+            s += '1\n\n';  
+    
+            s += block.shapesToDxf();
+            // let shapes = layer.getShapes();
+            s += '0\nENDBLK\n';
+        }
+
+        s += '0\nENDSEC\n';
+
+
+
+
+
+
 
 
         //close file
