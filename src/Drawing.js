@@ -267,21 +267,8 @@ class Drawing
         //end section
         s += '0\nENDSEC\n';
 
-
-        //ENTITES section
-        s += '0\nSECTION\n';
-        s += '2\nENTITIES\n';
-
-        for (let layerName in this.layers)
-        {
-            let layer = this.layers[layerName];
-            s += layer.shapesToDxf();
-            // let shapes = layer.getShapes();
-        }
-
-        s += '0\nENDSEC\n';
-
-        //Blocks section
+        
+        //BLOCKS section
         s += '0\nSECTION\n';
         s += '2\nBLOCKS\n';
 
@@ -299,20 +286,28 @@ class Drawing
 
             s += `3\n${block.name}\n`;
             s += '1\n\n';  
-    
+
             s += block.shapesToDxf();
             // let shapes = layer.getShapes();
             s += '0\nENDBLK\n';
         }
-
+ 
+       //end section
         s += '0\nENDSEC\n';
 
 
+        //ENTITES section
+        s += '0\nSECTION\n';
+        s += '2\nENTITIES\n';
 
+        for (let layerName in this.layers)
+        {
+            let layer = this.layers[layerName];
+            s += layer.shapesToDxf();
+            // let shapes = layer.getShapes();
+        }
 
-
-
-
+        s += '0\nENDSEC\n';
 
         //close file
         s += '0\nEOF';
